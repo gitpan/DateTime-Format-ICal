@@ -41,7 +41,7 @@ my $ical = 'DateTime::Format::ICal';
 
     $str = $ical->format_period_with_duration( $span );
     # weird result, but looks correct
-    is( $str, '19920405T160708Z/+P52W1D', 'period as datetime and duration' );
+    is( $str, '19920405T160708Z/+PT31536001S', 'period as datetime and duration' );
 
     $span = $ical->parse_period( $str );
     is( $ical->format_period( $span ), '19920405T160708Z/19930405T160708Z', 'period as datetimes' );
@@ -53,7 +53,7 @@ my $ical = 'DateTime::Format::ICal';
         'TZID=America/Chicago:00241121/TZID=America/Chicago:00241123', 
         'period as datetimes' );
     is( $ical->format_period_with_duration( $span ), 
-        'TZID=America/Chicago:00241121/+P2D', 
+        'TZID=America/Chicago:00241121/+PT172800S', 
         'period as datetime and duration' );
 
 }

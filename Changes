@@ -1,3 +1,13 @@
+0.07     2003-09-02
+
+- Added format_recurrence() & docs.  Implemented by Flavio Glock.
+
+- Require DateTime::Event::Recurrence 0.03 to get hints on formatting
+unbounded recurrences.
+
+- Updated to work with newer versions of DateTime.pm and
+DateTime::Span.
+
 0.06     2003-07-01
 
 - Fix a test where a zero-duration was tested for being "positive".

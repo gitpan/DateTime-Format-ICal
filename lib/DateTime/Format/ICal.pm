@@ -4,7 +4,7 @@ use strict;
 
 use vars qw ($VERSION);
 
-$VERSION = '0.06';
+$VERSION = '0.07';
 
 use DateTime;
 use DateTime::Span;
@@ -163,6 +163,7 @@ sub parse_recurrence
         }
     }
 
+    # NOTE: 'until' is parsed out of 'recurrence'
     $p{until} =
         __PACKAGE__->parse_datetime( $p{until} )
             if defined $p{until} && ! ref $p{until};
@@ -249,6 +250,187 @@ sub format_period_with_duration
 
     return $self->format_datetime( $span->start ) . '/' .
            $self->format_duration( $span->duration ) ;
+}
+
+
+sub _split_datetime_tz 
+{
+    my ( $self, $dt ) = @_;
+
+    my $tz = $dt->time_zone;
+
+    unless ( $tz->is_floating ||
+             $tz->is_utc ||
+             $tz->is_olson )
+    {
+        $dt = $dt->clone->set_time_zone('UTC');
+        $tz = $dt->time_zone;
+    }
+
+    my $base =
+        ( $dt->hour || $dt->min || $dt->sec ?
+          sprintf( '%04d%02d%02dT%02d%02d%02d',
+                   $dt->year, $dt->month, $dt->day,
+                   $dt->hour, $dt->minute, $dt->second ) :
+          sprintf( '%04d%02d%02d', $dt->year, $dt->month, $dt->day )
+        );
+
+    return ($base, '')    if $tz->is_floating;
+    return ($base, 'UTC') if $tz->is_utc;
+    return ($base, $tz->name);
+}
+
+sub format_recurrence
+{
+    my ( $self, $set, @more ) = @_;
+    my @result;
+
+    # normalize param to either DT::Set or DT::SpanSet
+    # DT list =>       convert to DT::Set
+    # DT::Span list => convert to DT::SpanSet
+
+    if ( $set->isa('DateTime') )
+    {
+        $set = DateTime::Set->from_datetimes( dates => [ $set, @more ] );
+    }
+    elsif ( $set->isa('DateTime::Span') )
+    {
+        $set = DateTime::SpanSet->from_spans( spans => [ $set, @more ] );
+    }
+
+    # is it a recurrence?
+    if ( $set->{set}->is_too_complex )
+    {
+        # DT::Set recurrence => DTSTART;timezone:date CRLF
+        #                       RRULE:params CRLF
+        #   note: add more lines if necessary:
+        #             union =        more RRULE/RDATE lines
+        #             complement =   more EXRULE/EXDATE lines
+        #             intersection = ?
+        #   note: timezone is specified by DTSTART only.
+
+        # TODO: add support to DT::Event::Recurrence objects
+
+        if ( $set->can( 'get_ical' ) && defined $set->get_ical )
+        {
+            my %ical = $set->get_ical;
+            for ( @{ $ical{include} } )
+            {
+                next unless $_;
+                if ( ref( $_ ) )
+                {
+                    push @result, $self->format_recurrence( $_ );
+                }
+                else
+                {
+                    push @result, $_;
+                }
+            }
+            if ( $ical{exclude} )
+            {
+                my @exclude;
+                for ( @{ $ical{exclude} } )
+                {
+                    next unless $_;
+                    if ( ref( $_ ) )
+                    {
+			push @exclude, $self->format_recurrence( $_ );
+                    }
+                    else
+                    {
+			push @exclude, $_;
+                    }
+                }
+                s/^RDATE/EXDATE/ for @exclude;
+                s/^RRULE/EXRULE/ for @exclude;
+                push @result, @exclude;
+            }
+        }
+        else
+        {
+            die "format_recurrence() - Format not implemented for this unbounded set";
+        }
+
+        # end: format recurrence
+    }
+    else
+    {
+        # DT::Set  =>        RDATE:datetime,datetime,datetime CRLF
+        # DT::SpanSet =>     RDATE;VALUE=PERIOD:period,period CRLF
+        #
+        # not supported =>   RDATE;VALUE=DATE:date,date,date CRLF
+        #
+        # DT::Set w/tz =>     RDATE;timezone:date,date CRLF
+        # DT::SpanSet w/tz => RDATE;VALUE=PERIOD;timezone:period,period CRLF
+
+        my $iterator = $set->iterator;
+        my $last_type = 'DateTime';
+        my $last_tz =   'invalid';
+        my $item;
+
+        while( $item = $iterator->next )
+        {
+            if( $item->isa('DateTime') )
+            {
+                my ($base,$tz) = $self->_split_datetime_tz( $item );
+                if( $last_tz eq $tz &&
+                    $last_type eq 'DateTime' )
+                {
+                    $result[-1] .= ',' . $base;
+                    $result[-1] .= 'Z' if $tz eq 'UTC';
+                }
+                else
+                {
+                    push @result, 'RDATE';
+                    $result[-1] .= ';TZID='.$tz if $tz ne '' && $tz ne 'UTC';
+                    $result[-1] .= ':' . $base;
+                    $result[-1] .= 'Z' if $tz eq 'UTC';
+                    $last_tz =   $tz;
+                    $last_type = 'DateTime';
+                }
+            }
+            elsif( $item->isa('DateTime::Span') )
+            {
+                my $item_start = $item->start;
+                my $item_end =   $item->end;
+                if ( $item_start == $item_end )
+                {
+                    $item = $item_start;
+                    # item looks like a datetime
+                    redo;
+                }
+                my ($start,$tz) = $self->_split_datetime_tz( $item_start );
+                $item_end->set_time_zone( $tz );
+                my ($end,undef) = $self->_split_datetime_tz( $item_end );
+                if( $last_tz eq $tz &&
+                    $last_type eq 'DateTime::Span' )
+                {
+                    $result[-1] .= ',' . $start;
+                    $result[-1] .= 'Z' if $tz eq 'UTC';
+                    $result[-1] .= '/' . $end;
+                    $result[-1] .= 'Z' if $tz eq 'UTC';
+                }
+                else
+                {
+                    push @result, 'RDATE;VALUE=PERIOD';
+                    $result[-1] .= ';TZID='.$tz if $tz ne '' && $tz ne 'UTC';
+                    $result[-1] .= ':' . $start;
+                    $result[-1] .= 'Z' if $tz eq 'UTC';
+                    $result[-1] .= '/' . $end;
+                    $result[-1] .= 'Z' if $tz eq 'UTC';
+                    $last_tz =   $tz;
+                    $last_type = 'DateTime::Span';
+                }
+            }
+            else
+            {
+                die 'unexpected data type "'.ref($item).'" in set';
+            }
+        }
+
+        # end: format list of dates
+    }
+    return @result;
 }
 
 1;
@@ -364,6 +546,50 @@ period string, using the format C<DateTime/DateTime>.
 
 Given a C<DateTime::Span> object, this methods returns an iCal
 period string, using the format C<DateTime/Duration>.
+
+=item * format_recurrence($arg [,$arg...] )
+
+This method returns a list of strings containing ICal statements.
+
+The argument can be a C<DateTime> list, a C<DateTime::Span> list, a
+C<DateTime::Set>, or a C<DateTime::SpanSet>.
+
+ICal C<DATE> values are not supported. Whenever a date value is found,
+a C<DATE-TIME> is generated.
+
+If a recurrence has an associated C<DTSTART> or C<DTEND>, those values
+must be formatted using C<format_datetime()>.  The
+C<format_recurrence()> method will not do this for you.
+
+If a C<union> or C<complement> of recurrences is being formatted, they
+are assumed to have the same C<DTSTART> value.
+
+Only C<union> and C<complement> operations are supported for
+recurrences.  This is a limitation of the ICal specification.
+
+If given a set it cannot format, this method may die.
+
+Only C<DateTime::Set::ICal> objects are formattable.  A set may change
+class after some set operations:
+
+    $recurrence = $recurrence->union( $dt_set );
+    # Ok - $recurrence still is a DT::Set::ICal
+
+    $recurrence = $dt_set->union( $recurrence );
+    # Not Ok! - $recurrence is a DT::Set now
+
+The only unbounded recurrences currently supported are the ones
+generated by the C<DateTime::Event::ICal> module.
+
+You can add ICal formatting support to a custom recurrence by using
+the C<DateTime::Set::ICal> module:
+
+    $custom_recurrence =
+        DateTime::Set::ICal->from_recurrence
+            ( recurrence =>
+              sub { $_[0]->truncate( to => 'month' )->add( months => 1 ) }
+            );
+    $custom_recurrence->set_ical( include => [ 'FREQ=MONTHLY' ] );
 
 =back
 

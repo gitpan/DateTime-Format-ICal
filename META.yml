@@ -1,12 +1,12 @@
 --- #YAML:1.0
 name: DateTime-Format-ICal
-version: 0.06
+version: 0.07
 license: perl
 distribution_type: module
 requires:
-  DateTime: 0.13
-  DateTime::Event::ICal: 0
-  DateTime::Span: 0
+  DateTime: 0.17
+  DateTime::Event::ICal: 0.03
+  DateTime::Set: 0.1
   DateTime::TimeZone: 0.22
   Params::Validate: 0.59
 recommends: {}
@@ -15,5 +15,5 @@ conflicts: {}
 provides:
   DateTime::Format::ICal:
     file: lib/DateTime/Format/ICal.pm
-    version: 0.06
-generated_by: Module::Build version 0.18_02
+    version: 0.07
+generated_by: Module::Build version 0.20
