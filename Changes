@@ -1,3 +1,10 @@
+0.03     2003-04-05
+
+- Handle offset-only time zones without producing garbage output.  Bug
+report from Iain Truskett.
+
+- Switch to Module::Build.
+
 0.02     2003-02-16
 
 - Change docs to show methods as class methods.

@@ -4,7 +4,7 @@ use strict;
 
 use vars qw ($VERSION);
 
-$VERSION = '0.02';
+$VERSION = '0.03';
 
 use DateTime;
 
@@ -112,6 +112,14 @@ sub format_datetime
 {
     my ( $self, $dt ) = @_;
 
+    my $tz = $dt->time_zone;
+
+    unless ( $tz->is_floating || $tz->is_utc || $tz->name )
+    {
+        $dt = $dt->clone->set_time_zone('UTC');
+        $tz = $dt->time_zone;
+    }
+
     my $base =
         ( $dt->hour || $dt->min || $dt->sec ?
           sprintf( '%04d%02d%02dT%02d%02d%02d',
@@ -121,16 +129,11 @@ sub format_datetime
         );
 
 
-    my $tz = $dt->time_zone;
-
     return $base if $tz->is_floating;
 
     return $base . 'Z' if $tz->is_utc;
 
-    if ( defined $tz->name )
-    {
-        return 'TZID=' . $tz->name . ':' . $base;
-    }
+    return 'TZID=' . $tz->name . ':' . $base;
 }
 
 sub format_duration
@@ -218,6 +221,21 @@ If given an improperly formatted string, this method may die.
 
 Given a C<DateTime> object, this methods returns an iCal datetime
 string.
+
+The iCal spec requires that datetimes be formatted either as floating
+times (no time zone), UTC (with a 'Z' suffix) or with a time zone id
+at the beginning ('TZID=America/Chicago;...').  If this method is
+asked to format a C<DateTime> object that has an offset-only time
+zone, then the object will be converted to the UTC time zone
+internally before formatting.
+
+For example, this code:
+
+    my $dt = DateTime->new( year => 1900, hour => 15, time_zone => '-0100' );
+
+    print $ical->format_datetime($dt);
+
+will print the string "19000101T160000Z".
 
 =item * format_duration($duration)
 

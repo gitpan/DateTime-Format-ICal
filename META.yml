@@ -1,0 +1,11 @@
+--- #YAML:1.0
+name: DateTime-Format-ICal
+version: 0.03
+license: perl
+distribution_type: module
+requires:
+  DateTime: 0
+recommends: {}
+build_requires: {}
+conflicts: {}
+generated_by: Module::Build version 0.17

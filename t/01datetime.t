@@ -1,6 +1,6 @@
 use strict;
 
-use Test::More tests => 33;
+use Test::More tests => 34;
 
 use DateTime::Format::ICal;
 
@@ -76,3 +76,9 @@ my $ical = 'DateTime::Format::ICal';
     is( $ical->format_datetime($dt), 'TZID=America/Chicago:00241121', 'output should match input' );
 }
 
+{
+    my $dt = DateTime->new( year => 1900, hour => 15, time_zone => '-0100' );
+
+    is( $ical->format_datetime($dt), '19000101T160000Z',
+        'offset only time zone should be formatted as UTC' );
+}

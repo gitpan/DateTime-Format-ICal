@@ -1,7 +1,9 @@
+Build.PL
 Changes
 LICENSE
 MANIFEST
 Makefile.PL
+META.yml
 README
 lib/DateTime/Format/ICal.pm
 t/00load.t
