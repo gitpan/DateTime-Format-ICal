@@ -9,3 +9,6 @@ lib/DateTime/Format/ICal.pm
 t/00load.t
 t/01datetime.t
 t/02duration.t
+t/03period.t
+t/04recurrence.t
+

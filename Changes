@@ -1,4 +1,16 @@
-0.04
+0.05     2003-05-25
+
+- Turned on warnings for tests and tweaked code so there are none.
+
+- Require DateTime::TimeZone 0.17 to fix bug with formatting
+datetimes that was caused by API change in DT::TZ 0.13.
+
+- Added support for parsing of periods and recurrences, and for
+formatting of periods.  Implemented by Flavio Glock.
+
+0.04     2003-04-22
+
+- Make it work with the latest DateTime::Duration.
 
 - Added newlines to the end of all error messages.  Patch by Jay
 Lawrence.

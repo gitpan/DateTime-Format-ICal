@@ -1,3 +1,5 @@
+#!/usr/bin/perl -w
+
 use strict;
 
 use Test::More tests => 58;
@@ -92,7 +94,7 @@ my $ical = 'DateTime::Format::ICal';
     is( $dur->days, 2, '2 days' );
     is( $dur->hours, 0, '0 hours' );
     is( $dur->minutes, 0, '0 minutes' );
-    is( $dur->seconds, 0, '0 seconds' );
+    is( $dur->seconds + 0, 0, '0 seconds' );
 
     is( $ical->format_duration($dur), '-P4W2D', 'output should match input' );
 }

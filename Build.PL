@@ -6,5 +6,9 @@ Module::Build->new
       license      => 'perl',
 
       requires     => { 'DateTime' => 0.10,
+                        'DateTime::Event::ICal' => 0,
+                        'DateTime::Span' => 0,
+                        'DateTime::TimeZone' => 0.17,
+                        'Params::Validate' => 0.59,
                       },
     )->create_build_script;

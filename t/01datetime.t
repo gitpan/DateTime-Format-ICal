@@ -1,6 +1,8 @@
+#!/usr/bin/perl -w
+
 use strict;
 
-use Test::More tests => 34;
+use Test::More tests => 37;
 
 use DateTime::Format::ICal;
 
@@ -70,6 +72,9 @@ my $ical = 'DateTime::Format::ICal';
     is( $dt->year, 24, "date-only year" );
     is( $dt->month, 11, "date-only month");
     is( $dt->day, 21, "date-only day");
+    is( $dt->hour, 0, "date-only hour" );
+    is( $dt->minute, 0, "date-only minute" );
+    is( $dt->second, 0, "date-only second" );
 
     is( $dt->time_zone->name, 'America/Chicago', 'should be America/Chicago time zone' );
 

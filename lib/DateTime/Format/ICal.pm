@@ -4,9 +4,13 @@ use strict;
 
 use vars qw ($VERSION);
 
-$VERSION = '0.04';
+$VERSION = '0.05';
 
 use DateTime;
+use DateTime::Span;
+use DateTime::Event::ICal;
+
+use Params::Validate qw( validate_with SCALAR );
 
 sub new
 {
@@ -20,22 +24,18 @@ my %valid_formats =
     ( 15 =>
       { params => [ qw( year month day hour minute second ) ],
         regex  => qr/^(\d\d\d\d)(\d\d)(\d\d)T(\d\d)(\d\d)(\d\d)$/,
-        zero   => {},
       },
       13 =>
       { params => [ qw( year month day hour minute ) ],
         regex  => qr/^(\d\d\d\d)(\d\d)(\d\d)T(\d\d)(\d\d)$/,
-        zero   => { second => 0 },
       },
       11 =>
       { params => [ qw( year month day hour ) ],
         regex  => qr/^(\d\d\d\d)(\d\d)(\d\d)T(\d\d)$/,
-        zero   => { minute => 0, second => 0 },
       },
       8 =>
       { params => [ qw( year month day ) ],
         regex  => qr/^(\d\d\d\d)(\d\d)(\d\d)$/,
-        zero   => { hour => 0, minute => 0, second => 0 },
       },
     );
 
@@ -66,7 +66,7 @@ sub parse_datetime
 
     @p{ @{ $format->{params} } } = $date =~ /$format->{regex}/;
 
-    return DateTime->new( %p, %{ $format->{zero} } );
+    return DateTime->new(%p);
 }
 
 sub parse_duration
@@ -100,12 +100,74 @@ sub parse_duration
     die "Invalid ICal duration string ($dur)\n"
         unless %units;
 
-    if ( $sign eq '-' )
+    if ( defined $sign && $sign eq '-' )
     {
         $_ *= -1 foreach values %units;
     }
 
     return DateTime::Duration->new(%units);
+}
+
+sub parse_period
+{
+    my ( $self, $period ) = @_;
+
+    my ( $start, $end ) = $period =~ /^((?:TZID=[^:]+:)?.*?)\/(.*)/;
+
+    die "Invalid ICal period string ($period)\n"
+        unless $start && $end;
+
+    $start = $self->parse_datetime( $start );
+
+    if ( $end =~ /[\+\-]P/i ) {
+        $end = $start + $self->parse_duration( $end );
+    }
+    else
+    {
+        $end = $self->parse_datetime( $end );
+    }
+
+    die "Invalid ICal period: end before start ($period)\n"
+        if $start > $end;
+
+    return DateTime::Span->new( start => $start, end => $end );
+}
+
+sub parse_recurrence
+{
+    my $self = shift;
+    my %p = validate_with( params => \@_,
+                           spec   => { recurrence => { type => SCALAR } },
+                           allow_extra => 1,
+                         );
+
+    my $recurrence = delete $p{recurrence};
+
+    # parser: adapted from code written for Date::Set by jesse
+    # RRULEs look like 'FREQ=foo;INTERVAL=bar;' etc.
+    foreach ( split /;/, $recurrence )
+    {
+        my ( $name, $value ) = split /=/;
+
+        $name =~ tr/A-Z/a-z/;
+        $value =~ tr/A-Z/a-z/ unless $name eq 'until';
+
+        # BY<FOO> parameters should be arrays. everything else should be strings
+        if ( $name =~ /^by/i )
+        {
+            $p{$name} = [ split /,/, $value ];
+        }
+        else
+        {
+            $p{$name} = $value;
+        }
+    }
+
+    $p{until} =
+        __PACKAGE__->parse_datetime( $p{until} )
+            if defined $p{until} && ! ref $p{until};
+
+    return DateTime::Event::ICal->recur(%p);
 }
 
 sub format_datetime
@@ -114,7 +176,9 @@ sub format_datetime
 
     my $tz = $dt->time_zone;
 
-    unless ( $tz->is_floating || $tz->is_utc || $tz->name )
+    unless ( $tz->is_floating ||
+             $tz->is_utc ||
+             $tz->is_olson )
     {
         $dt = $dt->clone->set_time_zone('UTC');
         $tz = $dt->time_zone;
@@ -171,6 +235,22 @@ sub format_duration
 }
 
 
+sub format_period
+{
+    my ( $self, $span ) = @_;
+
+    return $self->format_datetime( $span->start ) . '/' .
+           $self->format_datetime( $span->end ) ;
+}
+
+sub format_period_with_duration
+{
+    my ( $self, $span ) = @_;
+
+    return $self->format_datetime( $span->start ) . '/' .
+           $self->format_duration( $span->duration ) ;
+}
+
 1;
 
 __END__
@@ -219,6 +299,25 @@ C<DateTime::Duration> object.
 
 If given an improperly formatted string, this method may die.
 
+=item * parse_period($string)
+
+Given an iCal period string, this method will return a new
+C<DateTime::Span> object.
+
+If given an improperly formatted string, this method may die.
+
+=teim * parse_recurrence( recurrence => $string, ... )
+
+Given an iCal recurrence description, this method uses
+C<DateTime::Event::ICal> to create a C<DateTime::Set> object
+representing that recurrence.  Any parameters given to this method
+beside "recurrence" and "until" will be passed directly to the C<<
+DateTime::Event::ICal->recur >> method.  If "until" is given as an
+iCal format datetime, it will be parsed and turned into an object
+first.
+
+If given an improperly formatted string, this method may die.
+
 =item * format_datetime($datetime)
 
 Given a C<DateTime> object, this methods returns an iCal datetime
@@ -247,6 +346,18 @@ duration string.
 The iCal standard does not allow for months or years in a duration, so
 if a duration for which C<delta_months()> is not zero is given, then
 this method will die.
+
+=item * format_period($span)
+
+Given a C<DateTime::Span> object, this methods returns an iCal
+period string, using the format C<DateTime/DateTime>.
+
+=item * format_period_with_duration($span)
+
+Given a C<DateTime::Span> object, this methods returns an iCal
+period string, using the format C<DateTime/Duration>.
+
+=back
 
 =head1 SUPPORT
 
