@@ -2,7 +2,7 @@
 
 use strict;
 
-use Test::More tests => 58;
+use Test::More tests => 60;
 
 use DateTime::Format::ICal;
 
@@ -102,7 +102,9 @@ my $ical = 'DateTime::Format::ICal';
 {
     my $dur = $ical->parse_duration('PT0S');
 
-    ok( $dur->is_positive, 'duration should be positive' );
+    ok( ! $dur->is_positive, 'duration is not positive' );
+    ok( ! $dur->is_negative, 'duration is not negative' );
+    ok( $dur->is_zero, 'duration is zero' );
     is( $dur->weeks, 0, '0 weeks' );
     is( $dur->days, 0, '0 days' );
     is( $dur->hours, 0, '0 hours' );

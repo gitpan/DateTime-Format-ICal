@@ -4,7 +4,7 @@ use strict;
 
 use vars qw ($VERSION);
 
-$VERSION = '0.05';
+$VERSION = '0.06';
 
 use DateTime;
 use DateTime::Span;
@@ -306,7 +306,7 @@ C<DateTime::Span> object.
 
 If given an improperly formatted string, this method may die.
 
-=teim * parse_recurrence( recurrence => $string, ... )
+=item * parse_recurrence( recurrence => $string, ... )
 
 Given an iCal recurrence description, this method uses
 C<DateTime::Event::ICal> to create a C<DateTime::Set> object
@@ -317,6 +317,14 @@ iCal format datetime, it will be parsed and turned into an object
 first.
 
 If given an improperly formatted string, this method may die.
+
+This method accepts optional parameters "dtstart" and "dtend".
+These parameters must be C<DateTime> objects.
+
+The iCal spec requires that "dtstart" always be included in the
+recurrence set, unless this is an "exrule" statement.  Since we don't
+know what kind of statement is being parsed, we do not include
+C<dtstart> in the recurrence set.
 
 =item * format_datetime($datetime)
 
@@ -364,9 +372,10 @@ period string, using the format C<DateTime/Duration>.
 Support for this module is provided via the datetime@perl.org email
 list.  See http://lists.perl.org/ for more details.
 
-=head1 AUTHOR
+=head1 AUTHORS
 
-Dave Rolsky <autarch@urth.org>
+Dave Rolsky <autarch@urth.org> and Flavio Soibelmann Glock
+<fglock@pucrs.br>
 
 Some of the code in this module comes from Rich Bowen's C<Date::ICal>
 module.
