@@ -4,7 +4,7 @@ use strict;
 
 use vars qw ($VERSION);
 
-$VERSION = '0.07';
+$VERSION = '0.08';
 
 use DateTime;
 use DateTime::Span;
@@ -102,7 +102,8 @@ sub parse_duration
 
     if ( defined $sign && $sign eq '-' )
     {
-        $_ *= -1 foreach values %units;
+        # $_ *= -1 foreach values %units;  - does not work in 5.00503
+        $units{$_} *= -1 foreach keys %units;
     }
 
     return DateTime::Duration->new(%units);
