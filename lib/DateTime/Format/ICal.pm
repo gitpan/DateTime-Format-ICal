@@ -4,7 +4,7 @@ use strict;
 
 use vars qw ($VERSION);
 
-$VERSION = '0.01_01';
+$VERSION = '0.02';
 
 use DateTime;
 
@@ -178,17 +178,15 @@ DateTime::Format::ICal - Parse and format iCal datetime and duration strings
 
   use DateTime::Format::ICal;
 
-  my $ical = DateTime::Format::ICal->new;
+  my $dt = DateTime::Format::ICal->parse_datetime( '20030117T032900Z' );
 
-  my $dt = $ical->parse_datetime( '20030117T032900Z' );
-
-  my $dur = $ical->parse_duration( '+P3WT4H55S' );
+  my $dur = DateTime::Format::ICal->parse_duration( '+P3WT4H55S' );
 
   # 20030117T032900Z
-  $ical->format_datetime($dt);
+  DateTime::Format::ICal->format_datetime($dt);
 
   # +P3WT4H55S
-  $ical->format_duration($dur);
+  DateTime::Format::ICal->format_duration($dur);
 
 =head1 DESCRIPTION
 
@@ -198,7 +196,7 @@ to create the appropriate objects.
 
 =head1 METHODS
 
-This API is currently experimental and may change in the future.
+This class offers the following methods.
 
 =over 4
 
@@ -226,10 +224,9 @@ string.
 Given a C<DateTime::Duration> object, this methods returns an iCal
 duration string.
 
-The iCal standard does not allow for months or years in duration, so
-if a duration for which C<delta_months()> return true is given, then
+The iCal standard does not allow for months or years in a duration, so
+if a duration for which C<delta_months()> is not zero is given, then
 this method will die.
-
 
 =head1 SUPPORT
 
@@ -240,7 +237,7 @@ list.  See http://lists.perl.org/ for more details.
 
 Dave Rolsky <autarch@urth.org>
 
-Some of the code int his module comes from Rich Bowen's C<Date::ICal>
+Some of the code in this module comes from Rich Bowen's C<Date::ICal>
 module.
 
 =head1 COPYRIGHT
@@ -248,9 +245,6 @@ module.
 Copyright (c) 2003 David Rolsky.  All rights reserved.  This program
 is free software; you can redistribute it and/or modify it under the
 same terms as Perl itself.
-
-Portions of the code in this distribution are derived from other
-works.  Please see the CREDITS file for more details.
 
 The full text of the license can be found in the LICENSE file included
 with this module.

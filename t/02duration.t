@@ -4,7 +4,7 @@ use Test::More tests => 57;
 
 use DateTime::Format::ICal;
 
-my $ical = DateTime::Format::ICal->new;
+my $ical = 'DateTime::Format::ICal';
 
 {
     my $dur = $ical->parse_duration('PT3S');

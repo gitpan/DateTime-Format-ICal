@@ -1,3 +1,7 @@
+0.02     2003-02-16
+
+- Change docs to show methods as class methods.
+
 0.01_01  2003-02-08
 
 - Fix Makefile.PL to list DateTime.pm as a prereq

@@ -4,7 +4,7 @@ use Test::More tests => 33;
 
 use DateTime::Format::ICal;
 
-my $ical = DateTime::Format::ICal->new;
+my $ical = 'DateTime::Format::ICal';
 
 {
     my $dt = $ical->parse_datetime( '19920405T160708Z' );
