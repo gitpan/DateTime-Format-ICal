@@ -1,6 +1,6 @@
 use strict;
 
-use Test::More tests => 57;
+use Test::More tests => 58;
 
 use DateTime::Format::ICal;
 
@@ -114,4 +114,10 @@ my $ical = 'DateTime::Format::ICal';
     eval { $ical->parse_duration('+PT') };
 
     like( $@, qr/Invalid.+/, "Invalid duration string" );
+}
+
+{
+    my $dur = DateTime::Duration->new( minutes => 5 );
+
+    is( $ical->format_duration($dur), '+PT5M', 'minutes only' );
 }

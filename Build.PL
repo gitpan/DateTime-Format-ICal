@@ -5,6 +5,6 @@ Module::Build->new
       author       => 'Dave Rolsky <autarch@urth.org>',
       license      => 'perl',
 
-      requires     => { 'DateTime' => 0,
+      requires     => { 'DateTime' => 0.10,
                       },
     )->create_build_script;

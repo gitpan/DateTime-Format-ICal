@@ -4,7 +4,7 @@ use strict;
 
 use vars qw ($VERSION);
 
-$VERSION = '0.03';
+$VERSION = '0.04';
 
 use DateTime;
 
@@ -62,7 +62,7 @@ sub parse_datetime
     }
 
     my $format = $valid_formats{ length $date }
-        or die "Invalid ICal datetime string ($original)";
+        or die "Invalid ICal datetime string ($original)\n";
 
     @p{ @{ $format->{params} } } = $date =~ /$format->{regex}/;
 
@@ -97,7 +97,7 @@ sub parse_duration
     $units{minutes} = $5 if defined $5;
     $units{seconds} = $6 if defined $6;
 
-    die "Invalid ICal duration string ($dur)"
+    die "Invalid ICal duration string ($dur)\n"
         unless %units;
 
     if ( $sign eq '-' )
@@ -145,7 +145,9 @@ sub format_duration
 
     # simple string for 0-length durations
     return '+PT0S'
-        unless $duration->delta_days || $duration->delta_seconds;
+        unless $duration->delta_days ||
+               $duration->delta_minutes ||
+               $duration->delta_seconds;
 
     my $ical = $duration->is_positive ? '+' : '-';
     $ical .= 'P';
@@ -156,7 +158,7 @@ sub format_duration
         $ical .= $duration->days  . 'D' if $duration->days;
     }
 
-    if ( $duration->delta_seconds )
+    if ( $duration->delta_minutes || $duration->delta_seconds )
     {
         $ical .= 'T';
 
