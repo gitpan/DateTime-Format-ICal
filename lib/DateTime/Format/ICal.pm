@@ -4,7 +4,7 @@ use strict;
 
 use vars qw ($VERSION);
 
-$VERSION = '0.08';
+$VERSION = '0.09';
 
 use DateTime;
 use DateTime::Span;
@@ -62,7 +62,7 @@ sub parse_datetime
     }
 
     my $format = $valid_formats{ length $date }
-        or die "Invalid ICal datetime string ($original)\n";
+        or die "Invalid iCal datetime string ($original)\n";
 
     @p{ @{ $format->{params} } } = $date =~ /$format->{regex}/;
 
@@ -144,30 +144,31 @@ sub parse_recurrence
 
     my $recurrence = delete $p{recurrence};
 
+    # recurrence may start with RRULE:
+    $recurrence =~ s/^(?:RRULE|EXRULE)://i;
+
     # parser: adapted from code written for Date::Set by jesse
     # RRULEs look like 'FREQ=foo;INTERVAL=bar;' etc.
     foreach ( split /;/, $recurrence )
     {
         my ( $name, $value ) = split /=/;
 
-        $name =~ tr/A-Z/a-z/;
-        $value =~ tr/A-Z/a-z/ unless $name eq 'until';
+        $name  = lc $name;
 
         # BY<FOO> parameters should be arrays. everything else should be strings
-        if ( $name =~ /^by/i )
+        if ( $name eq 'until' )
         {
-            $p{$name} = [ split /,/, $value ];
+            $p{$name} = __PACKAGE__->parse_datetime( $value );
+        }
+        elsif ( $name =~ /^by/i )
+        {
+            $p{$name} = [ split /,/, lc( $value ) ];
         }
         else
         {
-            $p{$name} = $value;
+            $p{$name} = lc( $value );
         }
     }
-
-    # NOTE: 'until' is parsed out of 'recurrence'
-    $p{until} =
-        __PACKAGE__->parse_datetime( $p{until} )
-            if defined $p{until} && ! ref $p{until};
 
     return DateTime::Event::ICal->recur(%p);
 }
@@ -187,13 +188,9 @@ sub format_datetime
     }
 
     my $base =
-        ( $dt->hour || $dt->min || $dt->sec ?
-          sprintf( '%04d%02d%02dT%02d%02d%02d',
-                   $dt->year, $dt->month, $dt->day,
-                   $dt->hour, $dt->minute, $dt->second ) :
-          sprintf( '%04d%02d%02d', $dt->year, $dt->month, $dt->day )
-        );
-
+        sprintf( '%04d%02d%02dT%02d%02d%02d',
+                 $dt->year, $dt->month, $dt->day,
+                 $dt->hour, $dt->minute, $dt->second );
 
     return $base if $tz->is_floating;
 
@@ -431,6 +428,7 @@ sub format_recurrence
 
         # end: format list of dates
     }
+    return join( "\n", @result ) if ! wantarray;
     return @result;
 }
 
@@ -494,10 +492,8 @@ If given an improperly formatted string, this method may die.
 Given an iCal recurrence description, this method uses
 C<DateTime::Event::ICal> to create a C<DateTime::Set> object
 representing that recurrence.  Any parameters given to this method
-beside "recurrence" and "until" will be passed directly to the C<<
-DateTime::Event::ICal->recur >> method.  If "until" is given as an
-iCal format datetime, it will be parsed and turned into an object
-first.
+beside "recurrence" will be passed directly to the 
+C<< DateTime::Event::ICal->recur >> method.
 
 If given an improperly formatted string, this method may die.
 
@@ -551,6 +547,8 @@ period string, using the format C<DateTime/Duration>.
 =item * format_recurrence($arg [,$arg...] )
 
 This method returns a list of strings containing ICal statements.
+In scalar context it returns a single string which may contain
+embedded newlines.
 
 The argument can be a C<DateTime> list, a C<DateTime::Span> list, a
 C<DateTime::Set>, or a C<DateTime::SpanSet>.

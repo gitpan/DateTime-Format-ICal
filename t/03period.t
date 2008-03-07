@@ -49,11 +49,11 @@ my $ical = 'DateTime::Format::ICal';
 
 {
     my $span = $ical->parse_period( 'TZID=America/Chicago:00241121/+P2D' );
-    is( $ical->format_period( $span ), 
-        'TZID=America/Chicago:00241121/TZID=America/Chicago:00241123', 
+    is( $ical->format_period( $span ),
+        'TZID=America/Chicago:00241121T000000/TZID=America/Chicago:00241123T000000',
         'period as datetimes' );
-    is( $ical->format_period_with_duration( $span ), 
-        'TZID=America/Chicago:00241121/+PT172800S', 
+    is( $ical->format_period_with_duration( $span ),
+        'TZID=America/Chicago:00241121T000000/+PT172800S',
         'period as datetime and duration' );
 
 }

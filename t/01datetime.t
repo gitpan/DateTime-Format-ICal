@@ -52,9 +52,9 @@ my $ical = 'DateTime::Format::ICal';
 
     is( $dt->time_zone->name, 'UTC', 'time zone should be UTC' );
 
-    is( $ical->format_datetime($dt), '00241121Z', 'output should match input' );
+    is( $ical->format_datetime($dt), '00241121T000000Z',
+        'output should match input (except as a datetime)' );
 }
-
 
 {
     my $dt = $ical->parse_datetime( '00241121' );
@@ -64,7 +64,8 @@ my $ical = 'DateTime::Format::ICal';
 
     ok( $dt->time_zone->is_floating, 'should be floating time zone' );
 
-    is( $ical->format_datetime($dt), '00241121', 'output should match input' );
+    is( $ical->format_datetime($dt), '00241121T000000',
+        'output should match input (except as a datetime)' );
 }
 
 {
@@ -78,7 +79,8 @@ my $ical = 'DateTime::Format::ICal';
 
     is( $dt->time_zone->name, 'America/Chicago', 'should be America/Chicago time zone' );
 
-    is( $ical->format_datetime($dt), 'TZID=America/Chicago:00241121', 'output should match input' );
+    is( $ical->format_datetime($dt), 'TZID=America/Chicago:00241121T000000',
+        'output should match input (except as a datetime)' );
 }
 
 {

@@ -11,4 +11,5 @@ Module::Build->new
                         'DateTime::TimeZone' => 0.22,
                         'Params::Validate' => 0.59,
                       },
+      build_requires => { 'Module::Build' => 0 },
     )->create_build_script;
